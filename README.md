@@ -1,4 +1,8 @@
-# archive
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/banner.svg">
+  <source media="(prefers-color-scheme: light)" srcset=".github/banner-light.svg">
+  <img alt="archive — a continuous paper ribbon folds into a compact archival sleeve, illustrating streamed compression." src=".github/banner-light.svg">
+</picture>
 
 A small streaming archival tool. Remote files are read from the network and written directly through tar and Zstandard into the final archive; model files are never staged uncompressed on disk.
 

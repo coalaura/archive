@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" fill="none" role="img" aria-labelledby="title description">
+  <title id="title">archive</title>
+  <desc id="description">A continuous paper ribbon folds increasingly tightly into an ochre archival sleeve marked archive. Streaming files into .tar.zst.</desc>
+  <defs>
+    <style>
+      .paper { fill: #e5e8db; }
+      .fold { fill: #8daba5; }
+      .edge { stroke: #344c49; stroke-width: 1.5; stroke-linejoin: round; }
+      .crease { stroke: #f2f3e8; stroke-width: 1.5; }
+      .sleeve { fill: #e7b16b; }
+      .sleeve-top { fill: #f4cb8f; }
+      .sleeve-side { fill: #b98145; }
+      .ink { stroke: #26332f; }
+      .caption { fill: #344337; }
+    </style>
+    <!-- One compressed fold; each file remains a separate frame in the stream. -->
+    <g id="pleat" class="edge">
+      <path class="paper" d="M0 76 10 89V233L0 220Z"/>
+      <path class="fold" d="m10 89 6-13v144l-6 13Z"/>
+      <path class="crease" d="M10 92v138"/>
+    </g>
+  </defs>
+
+  <!-- The same ribbon, first loose, then progressively closer-folded. -->
+  <g class="edge">
+    <path class="paper" d="m66 84 88 41v123l-88-41Z"/>
+    <path class="fold" d="m154 125 68-73v123l-68 73Z"/>
+    <path class="paper" d="m222 52 59 54v123l-59-54Z"/>
+    <path class="fold" d="m281 106 47-38v123l-47 38Z"/>
+    <path class="paper" d="m328 68 39 35v123l-39-35Z"/>
+    <path class="fold" d="m367 103 32-20v123l-32 20Z"/>
+    <path class="paper" d="m399 83 38 16v123l-38-16Z"/>
+  </g>
+  <g class="crease">
+    <path d="M154 128v116M281 109v116M367 106v116"/>
+  </g>
+
+  <!-- The packed end projects from the open sleeve. -->
+  <g>
+    <use href="#pleat" x="980"/>
+    <use href="#pleat" x="996"/>
+    <use href="#pleat" x="1012"/>
+    <use href="#pleat" x="1028"/>
+    <use href="#pleat" x="1044"/>
+    <use href="#pleat" x="1060"/>
+    <use href="#pleat" x="1076"/>
+    <use href="#pleat" x="1092"/>
+    <path class="paper edge" d="m1108 76 26 12v144l-26-12Z"/>
+  </g>
+
+  <!-- A physical paper sleeve, with the project name printed on its face. -->
+  <g>
+    <path class="sleeve-top" d="m413 89 24-24h557l-24 24Z"/>
+    <path class="sleeve-side" d="m970 89 24-24v151l-24 24Z"/>
+    <path class="sleeve" d="M413 89h557v151H413Z"/>
+  </g>
+
+  <!-- Outlined, custom lowercase lettering: no font dependency for the name. -->
+  <g class="ink" transform="translate(460 110) scale(1.12 .92)" stroke-width="10" stroke-linecap="square" stroke-linejoin="round">
+    <ellipse cx="24" cy="58" rx="20" ry="22"/>
+    <path d="M44 33v47"/>
+    <!-- A vertical tangent keeps the shoulder cap inside the r's stem. -->
+    <path d="M69 80V33m0 16c0-13 15-20 27-17"/>
+    <path d="M151 37c-20-18-41-4-41 19s21 37 41 19"/>
+    <path d="M176 80V0m0 49c0-25 42-25 42 0v31"/>
+    <path d="M245 35v45"/>
+    <path d="m270 34 22 46h4l22-46"/>
+    <path d="M341 55h44c0-34-44-34-44 0 0 27 26 34 43 19"/>
+  </g>
+  <circle cx="734.4" cy="119.2" r="6.2" fill="#26332f"/>
+  <text class="caption" x="460" y="218" font-family="Arial, Helvetica, sans-serif" font-size="22">Streaming files into .tar.zst</text>
+</svg>
