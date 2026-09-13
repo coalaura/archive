@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" fill="none" role="img" aria-labelledby="title description">
   <title id="title">archive</title>
-  <desc id="description">A continuous paper ribbon folds increasingly tightly into an ochre archival sleeve marked archive. Streaming files into .tar.zst.</desc>
+  <desc id="description">A continuous paper ribbon folds into an ochre archival sleeve marked archive and emerges tightly compressed from its open right end. Streaming files into .tar.zst.</desc>
   <defs>
     <style>
       .paper { fill: #edf0e5; }
@@ -10,15 +10,20 @@
       .sleeve { fill: #dea45b; }
       .sleeve-top { fill: #edbf7d; }
       .sleeve-side { fill: #a97035; }
+      .sleeve-inside { fill: #65482d; }
       .ink { stroke: #23322c; }
       .caption { fill: #2c3c30; }
     </style>
     <!-- One compressed fold; each file remains a separate frame in the stream. -->
     <g id="pleat" class="edge">
-      <path class="paper" d="M0 76 10 89V233L0 220Z"/>
-      <path class="fold" d="m10 89 6-13v144l-6 13Z"/>
-      <path class="crease" d="M10 92v138"/>
+      <path class="paper" d="M0 94 10 107V221L0 208Z"/>
+      <path class="fold" d="m10 107 6-13v114l-6 13Z"/>
+      <path class="crease" d="M10 110v108"/>
     </g>
+    <linearGradient id="outlet-shadow" x1="970" y1="0" x2="1014" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#23322c" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#23322c" stop-opacity="0"/>
+    </linearGradient>
   </defs>
 
   <!-- The same ribbon, first loose, then progressively closer-folded. -->
@@ -35,23 +40,32 @@
     <path d="M154 128v116M281 109v116M367 106v116"/>
   </g>
 
-  <!-- The packed end projects from the open sleeve. -->
+  <!-- A narrow cardboard rim surrounds the recessed, open end. -->
   <g>
-    <use href="#pleat" x="980"/>
-    <use href="#pleat" x="996"/>
-    <use href="#pleat" x="1012"/>
-    <use href="#pleat" x="1028"/>
-    <use href="#pleat" x="1044"/>
-    <use href="#pleat" x="1060"/>
-    <use href="#pleat" x="1076"/>
-    <use href="#pleat" x="1092"/>
-    <path class="paper edge" d="m1108 76 26 12v144l-26-12Z"/>
+    <path class="sleeve-top" d="m413 89 24-24h565l-32 24Z"/>
+    <path class="sleeve-side" d="m970 89 32-24v151l-32 24Z"/>
+    <path class="sleeve-inside" d="m974 92 24-18v137l-24 18Z"/>
   </g>
 
-  <!-- A physical paper sleeve, with the project name printed on its face. -->
+  <!-- The packed ribbon overlaps the opening, emerging through its rim. -->
+  <g transform="translate(10 0)">
+    <path class="fold edge" d="m966 107 6-13v114l-6 13Z"/>
+    <use href="#pleat" x="972"/>
+    <use href="#pleat" x="988"/>
+    <use href="#pleat" x="1004"/>
+    <use href="#pleat" x="1020"/>
+    <use href="#pleat" x="1036"/>
+    <use href="#pleat" x="1052"/>
+    <use href="#pleat" x="1068"/>
+    <use href="#pleat" x="1084"/>
+    <use href="#pleat" x="1100"/>
+    <path class="paper edge" d="m1116 94 26 12v114l-26-12Z"/>
+    <!-- The first folds emerge from the sleeve's shadow into the light. -->
+    <path fill="url(#outlet-shadow)" d="M966 107 972 94 982 107 988 94 998 107 1004 94 1014 107V221L1004 208 998 221 988 208 982 221 972 208 966 221Z"/>
+  </g>
+
+  <!-- The project name is printed on the sleeve's front face. -->
   <g>
-    <path class="sleeve-top" d="m413 89 24-24h557l-24 24Z"/>
-    <path class="sleeve-side" d="m970 89 24-24v151l-24 24Z"/>
     <path class="sleeve" d="M413 89h557v151H413Z"/>
   </g>
 
