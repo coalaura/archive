@@ -23,11 +23,12 @@ import (
 )
 
 const (
-	bytesPerUnit       = int64(1024)
-	defaultRetries     = 3
-	manifestPath       = ".archive/manifest.json"
-	repositoryRoot     = "repository"
-	shortRevisionWidth = 12
+	bytesPerUnit         = int64(1024)
+	defaultRetries       = 3
+	manifestPath         = ".archive/manifest.json"
+	partialDirectoryName = ".partial"
+	repositoryRoot       = "repository"
+	shortRevisionWidth   = 12
 )
 
 type Archiver struct {
@@ -50,7 +51,14 @@ func (archiver *Archiver) Archive(ctx context.Context, source provider.Provider,
 		return "", fmt.Errorf("create output directory: %w", err)
 	}
 
-	progressPath := statePath(outputDirectory, reference, revision)
+	partialDirectory := filepath.Join(outputDirectory, partialDirectoryName)
+
+	err = os.MkdirAll(partialDirectory, 0o755)
+	if err != nil {
+		return "", fmt.Errorf("create partial directory: %w", err)
+	}
+
+	progressPath := statePath(partialDirectory, reference, revision)
 
 	progress, err := loadState(progressPath)
 	if err != nil {
@@ -99,7 +107,7 @@ func (archiver *Archiver) Archive(ctx context.Context, source provider.Provider,
 	}
 
 	finalPath := filepath.Join(outputDirectory, progress.FinalName)
-	partialPath := finalPath + ".partial"
+	partialPath := filepath.Join(partialDirectory, progress.FinalName+".partial")
 
 	if fileExists(finalPath) {
 		removeErr := os.Remove(progressPath)
@@ -246,27 +254,54 @@ func (archiver *Archiver) archiveFile(ctx context.Context, source provider.Provi
 }
 
 func (archiver *Archiver) writeFileFrame(ctx context.Context, source provider.Provider, snapshot *provider.Snapshot, file provider.File, output io.Writer) (manifest.File, error) {
-	reader, err := source.Open(ctx, snapshot, file)
-	if err != nil {
-		return manifest.File{}, err
-	}
-
-	defer reader.Close()
-
 	encoder, err := archiver.newEncoder(output)
 	if err != nil {
 		return manifest.File{}, err
 	}
 
 	archiveWriter := tar.NewWriter(encoder)
+	mode := file.Mode
+
+	if mode == 0 {
+		mode = 0o644
+	}
 
 	header := &tar.Header{
 		Name:    repositoryRoot + "/" + file.Path,
-		Mode:    0o644,
+		Mode:    mode,
 		Size:    file.Size,
 		ModTime: time.Unix(0, 0).UTC(),
 		Format:  tar.FormatPAX,
 	}
+
+	var (
+		reader      io.ReadCloser
+		destination io.Writer = archiveWriter
+	)
+
+	switch file.Type {
+	case "", provider.FileTypeRegular:
+		reader, err = source.Open(ctx, snapshot, file)
+		if err != nil {
+			encoder.Close()
+
+			return manifest.File{}, err
+		}
+	case provider.FileTypeSymlink:
+		header.Typeflag = tar.TypeSymlink
+		header.Linkname = file.LinkTarget
+		header.Size = 0
+
+		reader = io.NopCloser(strings.NewReader(file.LinkTarget))
+
+		destination = io.Discard
+	default:
+		encoder.Close()
+
+		return manifest.File{}, fmt.Errorf("archive %s: unsupported file type %q", file.Path, file.Type)
+	}
+
+	defer reader.Close()
 
 	err = archiveWriter.WriteHeader(header)
 	if err != nil {
@@ -278,7 +313,7 @@ func (archiver *Archiver) writeFileFrame(ctx context.Context, source provider.Pr
 	hasher := sha256.New()
 	stream := io.TeeReader(reader, hasher)
 
-	written, copyErr := io.Copy(archiveWriter, stream)
+	written, copyErr := io.Copy(destination, stream)
 	if copyErr != nil {
 		encoder.Close()
 
@@ -317,6 +352,8 @@ func (archiver *Archiver) writeFileFrame(ctx context.Context, source provider.Pr
 	return manifest.File{
 		Path:         file.Path,
 		Size:         file.Size,
+		Mode:         file.Mode,
+		Type:         file.Type,
 		SHA256:       sha256Sum,
 		SourceSHA256: file.SourceSHA256,
 		BlobID:       file.BlobID,
@@ -470,6 +507,10 @@ func validateSnapshotState(progress *state, snapshot *provider.Snapshot) error {
 
 		if archivedFile.Path != snapshotFile.Path || archivedFile.Size != snapshotFile.Size {
 			return fmt.Errorf("saved state no longer matches pinned snapshot at file %d", index+1)
+		}
+
+		if archivedFile.Mode != snapshotFile.Mode || archivedFile.Type != snapshotFile.Type {
+			return fmt.Errorf("saved state no longer matches pinned snapshot at %s", archivedFile.Path)
 		}
 
 		if archivedFile.SourceSHA256 != "" && snapshotFile.SourceSHA256 != "" &&

@@ -5,11 +5,13 @@ import "github.com/coalaura/archive/internal/provider"
 const Version = 1
 
 type File struct {
-	Path         string `json:"path"`
-	Size         int64  `json:"size"`
-	SHA256       string `json:"sha256"`
-	SourceSHA256 string `json:"source_sha256,omitempty"`
-	BlobID       string `json:"blob_id,omitempty"`
+	Path         string            `json:"path"`
+	Size         int64             `json:"size"`
+	Mode         int64             `json:"mode,omitempty"`
+	Type         provider.FileType `json:"type,omitempty"`
+	SHA256       string            `json:"sha256"`
+	SourceSHA256 string            `json:"source_sha256,omitempty"`
+	BlobID       string            `json:"blob_id,omitempty"`
 }
 
 type Manifest struct {

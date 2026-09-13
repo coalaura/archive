@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -10,12 +11,16 @@ import (
 
 	"github.com/coalaura/archive/internal/archiver"
 	"github.com/coalaura/archive/internal/config"
+	gitprovider "github.com/coalaura/archive/internal/provider/git"
 	"github.com/coalaura/archive/internal/provider/huggingface"
 	"github.com/coalaura/plain/minimal"
 	"github.com/urfave/cli/v3"
 )
 
-const defaultRevision = "main"
+const (
+	gitDefaultRevision         = "HEAD"
+	huggingFaceDefaultRevision = "main"
+)
 
 type application struct {
 	workingDirectory string
@@ -28,8 +33,26 @@ func (application *application) command() *cli.Command {
 		Name:  "archive",
 		Usage: "stream remote artifacts directly into compressed archives",
 		Commands: []*cli.Command{
+			application.gitCommand(),
 			application.huggingFaceCommand(),
 		},
+	}
+}
+
+func (application *application) gitCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "git",
+		Usage:     "archive a Git repository",
+		ArgsUsage: "<repository>",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "revision",
+				Aliases: []string{"r"},
+				Value:   gitDefaultRevision,
+				Usage:   "branch, tag, or commit to archive",
+			},
+		},
+		Action: application.archiveGit,
 	}
 }
 
@@ -43,12 +66,44 @@ func (application *application) huggingFaceCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:    "revision",
 				Aliases: []string{"r"},
-				Value:   defaultRevision,
+				Value:   huggingFaceDefaultRevision,
 				Usage:   "branch, tag, or full commit SHA to archive",
 			},
 		},
 		Action: application.archiveHuggingFace,
 	}
+}
+
+func (application *application) archiveGit(ctx context.Context, command *cli.Command) (resultErr error) {
+	if command.NArg() != 1 {
+		return errors.New("usage: archive git <repository>")
+	}
+
+	reference := strings.TrimSpace(command.Args().First())
+	if reference == "" {
+		return errors.New("repository cannot be empty")
+	}
+
+	revision := strings.TrimSpace(command.String("revision"))
+	if revision == "" {
+		return errors.New("revision cannot be empty")
+	}
+
+	outputDirectory := filepath.Join(application.workingDirectory, "archive", "git")
+	source := gitprovider.New(outputDirectory)
+
+	defer func() {
+		closeErr := source.Close()
+		if closeErr != nil {
+			resultErr = errors.Join(resultErr, fmt.Errorf("remove temporary Git repository: %w", closeErr))
+		}
+	}()
+
+	archiveWriter := archiver.New(application.logger)
+
+	_, resultErr = archiveWriter.Archive(ctx, source, reference, revision, outputDirectory)
+
+	return resultErr
 }
 
 func (application *application) archiveHuggingFace(ctx context.Context, command *cli.Command) error {

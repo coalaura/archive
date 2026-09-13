@@ -5,9 +5,19 @@ import (
 	"io"
 )
 
+const (
+	FileTypeRegular FileType = "file"
+	FileTypeSymlink FileType = "symlink"
+)
+
+type FileType string
+
 type File struct {
 	Path         string
 	Size         int64
+	Mode         int64
+	Type         FileType
+	LinkTarget   string
 	BlobID       string
 	SourceSHA256 string
 }

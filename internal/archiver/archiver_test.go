@@ -134,6 +134,15 @@ func TestArchive(t *testing.T) {
 	if len(archiveManifest.Files) != 2 {
 		t.Fatalf("unexpected manifest file count: %d", len(archiveManifest.Files))
 	}
+
+	partialEntries, err := os.ReadDir(filepath.Join(outputDirectory, partialDirectoryName))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(partialEntries) != 0 {
+		t.Fatalf("partial directory is not empty after successful archive: %v", partialEntries)
+	}
 }
 
 func TestArchiveResume(t *testing.T) {
@@ -162,6 +171,24 @@ func TestArchiveResume(t *testing.T) {
 		t.Fatalf("config.json was opened %d times", failingSource.openCounts["config.json"])
 	}
 
+	outputEntries, err := os.ReadDir(outputDirectory)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(outputEntries) != 1 || outputEntries[0].Name() != partialDirectoryName {
+		t.Fatalf("unfinished files escaped partial directory: %v", outputEntries)
+	}
+
+	partialEntries, err := os.ReadDir(filepath.Join(outputDirectory, partialDirectoryName))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(partialEntries) != 2 {
+		t.Fatalf("unexpected unfinished file count: %d", len(partialEntries))
+	}
+
 	resumedSource := &fakeProvider{files: files}
 
 	archivePath, err := archiveWriter.Archive(context.Background(), resumedSource, "owner/model", "main", outputDirectory)
@@ -177,6 +204,15 @@ func TestArchiveResume(t *testing.T) {
 		t.Fatalf("resume opened weights.bin %d times", resumedSource.openCounts["weights.bin"])
 	}
 
+	partialEntries, err = os.ReadDir(filepath.Join(outputDirectory, partialDirectoryName))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(partialEntries) != 0 {
+		t.Fatalf("partial directory is not empty after resume: %v", partialEntries)
+	}
+
 	entries, err := readArchive(archivePath)
 	if err != nil {
 		t.Fatal(err)
@@ -184,6 +220,53 @@ func TestArchiveResume(t *testing.T) {
 
 	if string(entries["repository/weights.bin"]) != string(files["weights.bin"]) {
 		t.Fatal("resumed weights.bin does not match source")
+	}
+}
+
+func TestWriteSymlinkFrame(t *testing.T) {
+	linkTarget := "config.json"
+
+	file := provider.File{
+		Path:       "config-link",
+		Size:       int64(len(linkTarget)),
+		Mode:       0o777,
+		Type:       provider.FileTypeSymlink,
+		LinkTarget: linkTarget,
+	}
+
+	source := &fakeProvider{}
+
+	logger := minimal.New(minimal.WithTarget(io.Discard), minimal.WithErrorTarget(io.Discard))
+
+	archiveWriter := New(logger)
+
+	var output bytes.Buffer
+
+	archivedFile, err := archiveWriter.writeFileFrame(context.Background(), source, nil, file, &output)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if archivedFile.Type != provider.FileTypeSymlink || archivedFile.Mode != 0o777 {
+		t.Fatalf("unexpected archived metadata: %+v", archivedFile)
+	}
+
+	decoder, err := zstd.NewReader(bytes.NewReader(output.Bytes()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer decoder.Close()
+
+	archiveReader := tar.NewReader(decoder)
+
+	header, err := archiveReader.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if header.Name != "repository/config-link" || header.Typeflag != tar.TypeSymlink || header.Linkname != linkTarget {
+		t.Fatalf("unexpected symlink header: %+v", header)
 	}
 }
 
