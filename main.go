@@ -11,7 +11,7 @@ import (
 	"github.com/coalaura/archive/internal/archiver"
 	"github.com/coalaura/archive/internal/config"
 	"github.com/coalaura/archive/internal/provider/huggingface"
-	"github.com/coalaura/plain"
+	"github.com/coalaura/plain/minimal"
 	"github.com/urfave/cli/v3"
 )
 
@@ -20,7 +20,7 @@ const defaultRevision = "main"
 type application struct {
 	workingDirectory string
 	config           config.Config
-	logger           *plain.Plain
+	logger           *minimal.Minimal
 }
 
 func (application *application) command() *cli.Command {
@@ -76,7 +76,7 @@ func (application *application) archiveHuggingFace(ctx context.Context, command 
 }
 
 func main() {
-	logger := plain.New()
+	logger := minimal.New()
 
 	workingDirectory, err := os.Getwd()
 	if err != nil {

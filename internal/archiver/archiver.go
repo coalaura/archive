@@ -18,7 +18,7 @@ import (
 
 	"github.com/coalaura/archive/internal/manifest"
 	"github.com/coalaura/archive/internal/provider"
-	"github.com/coalaura/plain"
+	"github.com/coalaura/plain/minimal"
 	"github.com/klauspost/compress/zstd"
 )
 
@@ -31,12 +31,12 @@ const (
 )
 
 type Archiver struct {
-	logger      *plain.Plain
+	logger      *minimal.Minimal
 	retries     int
 	compression zstd.EncoderLevel
 }
 
-func New(logger *plain.Plain) *Archiver {
+func New(logger *minimal.Minimal) *Archiver {
 	return &Archiver{
 		logger:      logger,
 		retries:     defaultRetries,
@@ -67,9 +67,9 @@ func (archiver *Archiver) Archive(ctx context.Context, source provider.Provider,
 
 		resolveRevision = progress.ResolvedRevision
 
-		archiver.logger.Printf("Resuming %s@%s\n", reference, shortRevision(progress.ResolvedRevision))
+		archiver.logger.Infof("Resuming %s@%s\n", reference, shortRevision(progress.ResolvedRevision))
 	} else {
-		archiver.logger.Printf("Resolving %s@%s\n", reference, revision)
+		archiver.logger.Infof("Resolving %s@%s\n", reference, revision)
 	}
 
 	snapshot, err := source.Resolve(ctx, reference, resolveRevision)
@@ -107,7 +107,7 @@ func (archiver *Archiver) Archive(ctx context.Context, source provider.Provider,
 			archiver.logger.Warnf("Could not remove stale state: %v\n", removeErr)
 		}
 
-		archiver.logger.Printf("Already archived: %s\n", finalPath)
+		archiver.logger.Infof("Already archived: %s\n", finalPath)
 
 		return finalPath, nil
 	}
@@ -129,7 +129,7 @@ func (archiver *Archiver) Archive(ctx context.Context, source provider.Provider,
 	for index := progress.NextFile; index < len(snapshot.Files); index++ {
 		file := snapshot.Files[index]
 
-		archiver.logger.Printf(
+		archiver.logger.Subf(
 			"[%d/%d] %s (%s)\n",
 			index+1,
 			len(snapshot.Files),
@@ -196,7 +196,7 @@ func (archiver *Archiver) Archive(ctx context.Context, source provider.Provider,
 		archiver.logger.Warnf("Archive completed, but state cleanup failed: %v\n", removeErr)
 	}
 
-	archiver.logger.Printf("Archived to %s\n", finalPath)
+	archiver.logger.Infof("Archived to %s\n", finalPath)
 
 	return finalPath, nil
 }

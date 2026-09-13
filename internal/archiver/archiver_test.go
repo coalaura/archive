@@ -15,7 +15,7 @@ import (
 
 	"github.com/coalaura/archive/internal/manifest"
 	"github.com/coalaura/archive/internal/provider"
-	"github.com/coalaura/plain"
+	"github.com/coalaura/plain/minimal"
 	"github.com/klauspost/compress/zstd"
 )
 
@@ -72,6 +72,7 @@ func (source *fakeProvider) Open(_ context.Context, _ *provider.Snapshot, file p
 
 	if source.failPath == file.Path {
 		middle := len(data) / 2
+
 		reader := io.MultiReader(
 			bytes.NewReader(data[:middle]),
 			&failingReader{err: errors.New("simulated network failure")},
@@ -91,8 +92,10 @@ func TestArchive(t *testing.T) {
 		},
 	}
 
-	logger := plain.New(plain.WithTarget(io.Discard))
+	logger := minimal.New(minimal.WithTarget(io.Discard), minimal.WithErrorTarget(io.Discard))
+
 	archiveWriter := New(logger)
+
 	outputDirectory := t.TempDir()
 
 	archivePath, err := archiveWriter.Archive(context.Background(), source, "owner/model", "main", outputDirectory)
@@ -139,8 +142,10 @@ func TestArchiveResume(t *testing.T) {
 		"weights.bin": []byte("some model weights that fail during the first run"),
 	}
 
-	logger := plain.New(plain.WithTarget(io.Discard))
+	logger := minimal.New(minimal.WithTarget(io.Discard), minimal.WithErrorTarget(io.Discard))
+
 	archiveWriter := New(logger)
+
 	outputDirectory := t.TempDir()
 
 	failingSource := &fakeProvider{
@@ -198,6 +203,7 @@ func readArchive(path string) (map[string][]byte, error) {
 	defer decoder.Close()
 
 	archiveReader := tar.NewReader(decoder)
+
 	entries := make(map[string][]byte)
 
 	for {
